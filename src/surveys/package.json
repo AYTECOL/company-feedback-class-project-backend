@@ -1,0 +1,24 @@
+{
+  "name": "surveys-function",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.529.1",
+    "@aws-sdk/client-s3": "^3.529.1",
+    "@aws-sdk/lib-dynamodb": "^3.529.1",
+    "@codegenie/serverless-express": "^4.14.0",
+    "date-fns-tz": "^2.0.1",
+    "express": "^4.18.3",
+    "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.12",
+    "short-uuid": "^4.2.2"
+  }
+}

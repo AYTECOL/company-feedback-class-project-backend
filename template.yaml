@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This company-feedback-backend-sam stack is for the company-feedback application.
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+
+Parameters:
+  AppName:
+    Type: String
+    Default: company-feedback
+  AppEnv:
+    Type: String
+    Default: dev
+
+Resources:
+  # ------------- IAM Role -------------
+  CompanyFeedbackRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CompanyFeedbackRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: 2012-10-17
+      Policies:
+        - PolicyName: CompanyFeedbackLogsPolicy
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource: "*"
+            Version: 2012-10-17
+        - PolicyName: CompanyFeedbackDynamoDBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Effect: Allow
+                Resource:
+                  - !GetAtt CompanyFeedbackTable.Arn
+        - PolicyName: CompanyFeedbackS3Policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+                Effect: Allow
+                Resource:
+                  - !GetAtt CompanyFeedbackBucket.Arn
+                  - !Sub ${CompanyFeedbackBucket.Arn}/*
+
+  # ------------- DynamoDB -------------
+  CompanyFeedbackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AppName}-table-${AppEnv}
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      SSESpecification:
+        SSEEnabled: true
+
+  # ------------- S3 -------------
+  CompanyFeedbackBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AppName}-bucket-${AppEnv}
+      # VersioningConfiguration:
+      #   Status: Enabled
+      AccessControl: Private
+
+  # ------------- API Gateway -------------
+  CompanyFeedbackApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Sub ${AppEnv}
+
+  # ------------- Lambda functions -------------
+  AccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AppName}-account-${AppEnv}
+      CodeUri: src/account/
+      Handler: app.handler
+      Role: !GetAtt CompanyFeedbackRole.Arn
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CORS_ORIGIN: "*"
+          COMPANY_FEEDBACK_TABLE: !Ref CompanyFeedbackTable
+          COMPANY_FEEDBACK_BUCKET: !Ref CompanyFeedbackBucket
+      Events:
+        AccountFunctionProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CompanyFeedbackApiGateway
+            Method: ANY
+            Path: /v1/account/{proxy+}
+
+  SurveysFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AppName}-surveys-${AppEnv}
+      CodeUri: src/surveys/
+      Handler: app.handler
+      Role: !GetAtt CompanyFeedbackRole.Arn
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          CORS_ORIGIN: "*"
+          COMPANY_FEEDBACK_TABLE: !Ref CompanyFeedbackTable
+          COMPANY_FEEDBACK_BUCKET: !Ref CompanyFeedbackBucket
+      Events:
+        SurveysFunctionProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CompanyFeedbackApiGateway
+            Method: ANY
+            Path: /v1/surveys/{proxy+}
+
+Outputs:
+  CompanyFeedbackApiGateway:
+    Description: API Gateway endpoint URL for Prod environment
+    Value: !Sub https://${CompanyFeedbackApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${AppEnv}/

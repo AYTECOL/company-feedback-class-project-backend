@@ -3,22 +3,24 @@ const nodemailer = require("nodemailer");
 const {
   MAILER_EMAIL,
   MAILER_PASSWORD,
-  MAILER_SERVICE,
   BASE_URL,
 } = require("./constants");
 
 const transporter = nodemailer.createTransport({
-  service: MAILER_SERVICE,
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: MAILER_EMAIL,
     pass: MAILER_PASSWORD,
   },
 });
 
-const sendMail = (email) => {
-  const url = `${BASE_URL}/v1/account/verify?email=${email}`;
+const sendMail = async (email) => {
+  const url = `${BASE_URL}/account/verify/${email}`;
   const mailOptions = {
-    from: `Remitente ${MAILER_EMAIL}`,
+    from: MAILER_EMAIL,
     to: email,
     subject: "Verificación de cuenta",
     html: `
@@ -26,14 +28,10 @@ const sendMail = (email) => {
       <p>Para verificar tu cuenta, haz clic en el siguiente enlace: ${url}</p>
     `,
   };
+  console.log({msg: "Sending email: ", mailOptions});
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      throw error;
-    } else {
-      console.log(info.response);
-    }
-  });
+  const info = await transporter.sendMail(mailOptions);
+  console.log({msg: "Email info: ", info});
 };
 
 module.exports = {

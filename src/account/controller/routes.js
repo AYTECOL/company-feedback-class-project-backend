@@ -82,7 +82,7 @@ api.post("/create", async (request, response) => {
 
     await createCompany(email, hashedPassword);
 
-    // sendMail(email);
+    await sendMail(email);
 
     response
       .status(StatusCodes.OK)
@@ -99,36 +99,35 @@ api.get("/verify/:email", async (request, response) => {
   try {
     console.info({ msg: "PARAMS", params: request.params });
     const { email } = request.params;
-    if (!email) {
-      return response
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ msg: "Missing email" });
-    }
 
     const companyData = await getCompanyData(email);
     console.info({ msg: "COMPANY DATA", companyData });
     if (!companyData) {
       return response
         .status(StatusCodes.NOT_FOUND)
-        .json({ msg: "Company not found" });
+        .setHeader("Content-Type", "text/html")
+        .send("<h1 style='color: red;'>Company not found</h1>");
     }
 
     if (companyData.verified) {
       return response
         .status(StatusCodes.CONFLICT)
-        .json({ msg: "Account already verified" });
+        .setHeader("Content-Type", "text/html")
+        .send("<h1 style='color: red;'>Account already verified</h1>");
     }
 
     await verifyCompany(email);
 
     response
       .status(StatusCodes.OK)
-      .json({ msg: "Verifying account successfully" });
+      .setHeader("Content-Type", "text/html")
+      .send("<h1 style='color: green;'>Account verified successfully</h1>");
   } catch (error) {
     console.error("Error signin route: ", error);
     response
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ msg: "internal server error general endpoint" });
+      .setHeader("Content-Type", "text/html")
+      .send("<h1 style='color: red;'>Internal server error</h1>");
   }
 });
 

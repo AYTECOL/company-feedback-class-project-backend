@@ -63,11 +63,17 @@ api.post("/signin", async (request, response) => {
 api.post("/create", async (request, response) => {
   try {
     console.info({ msg: "BODY", body: request.body });
-    const { email, password } = request.body;
+    const { email, password, passwordConfirmation } = request.body;
     if (!email || !password) {
       return response
         .status(StatusCodes.BAD_REQUEST)
-        .json({ msg: "Missing email or password" });
+        .json({ msg: "Missing email, password or password confirmation" });
+    }
+
+    if (password !== passwordConfirmation) {
+      return response
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ msg: "Passwords do not match" });
     }
 
     const companyData = await getCompanyData(email);

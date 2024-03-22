@@ -1,5 +1,6 @@
 const express = require("express");
 const { StatusCodes } = require("http-status-codes");
+const fs = require("fs");
 
 const { validateToken } = require("../middleware/authentication");
 const {
@@ -193,18 +194,27 @@ api.get("/get/:email/:surveyId", async (request, response) => {
   }
 });
 
-api.post("/submit/:email/:surveyId", async (request, response) => {
+api.post("/submit/:surveyId", async (request, response) => {
   try {
     console.info({ msg: "PARAMS", params: request.params });
-    const { email, surveyId } = request.params;
+    const { surveyId } = request.params;
 
     console.info({ msg: "BODY", body: request.body });
     const { answers } = request.body;
 
     const csvFileName = `answers-${surveyId}.csv`;
-    // TODO Create or get a csv file fs with the answers
 
-    // TODO Upload the csv file to s3
+    // TODO Create a CSV file with the answers
+    const data = `
+      id,name,age
+      1,Johny,45
+      2,Mary,20
+    `;
+
+    const file = fs.writeFileSync(csvFileName, data, { encoding: "utf8" });
+
+    console.info({ msg: "FILE", file });
+
     await uploadS3File(file, csvFileName);
 
     response.status(StatusCodes.OK).json({

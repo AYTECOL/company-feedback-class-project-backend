@@ -124,6 +124,12 @@ Resources:
           COMPANY_FEEDBACK_TABLE: !Ref CompanyFeedbackTable
           COMPANY_FEEDBACK_BUCKET: !Ref CompanyFeedbackBucket
       Events:
+        # AccountFunctionOptions:
+        #   Type: Api
+        #   Properties:
+        #     RestApiId: !Ref CompanyFeedbackApiGateway
+        #     Method: OPTIONS
+        #     Path: /v1/account/{proxy+}
         AccountFunctionProxy:
           Type: Api
           Properties:
@@ -147,6 +153,12 @@ Resources:
           COMPANY_FEEDBACK_TABLE: !Ref CompanyFeedbackTable
           COMPANY_FEEDBACK_BUCKET: !Ref CompanyFeedbackBucket
       Events:
+        # SurveysFunctionOptions:
+        #   Type: Api
+        #   Properties:
+        #     RestApiId: !Ref CompanyFeedbackApiGateway
+        #     Method: OPTIONS
+        #     Path: /v1/surveys/{proxy+}
         SurveysFunctionProxy:
           Type: Api
           Properties:
